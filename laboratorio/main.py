@@ -1,49 +1,41 @@
 import os
 import platform
 
-from laboratorio_poo import (
-    ColaboradorTiempoCompleto,
-    ColaboradorTiempoParcial,
-    GestionColaboradores,
-)
-
 def limpiar_pantalla():
     ''' Limpiar la pantalla según el sistema operativo'''
     if platform.system() == 'Windows':
         os.system('cls')
     else:
-        os.system('clear') # Para Linux/Unix/MacOs
+        os.system('clear')
 
 def mostrar_menu():
-    print("========== Menú de Gestión de Colaboradores ==========")
-    print('1. Agregar Colaborador Tiempo Completo')
-    print('2. Agregar Colaborador Tiempo Parcial')
-    print('3. Buscar Colaborador por DNI')
-    print('4. Actualizar Colaborador')
-    print('5. Eliminarar Colaborador por DNI')
-    print('6. Mostrar Todos los Colaboradores¿')
+    print("========== Menú de Gestión de Tareas ==========")
+    print('1. Agregar Tarea Simple')
+    print('2. Agregar Tarea Recurrente')
+    print('3. Buscar Tarea por ID')
+    print('4. Actualizar Tarea')
+    print('5. Eliminar Tarea por ID')
+    print('6. Mostrar Todos los Tareas')
     print('7. Salir')
-    print('======================================================')
+    print('===============================================')
 
-def agregar_colaborador(gestion, tipo_colaborador):
+def agregar_tarea(gestion, tipo_tarea):
     try:
-        dni = input('Ingrese DNI del colaborador: ')
-        nombre = input('Ingrese nombre del colaborador: ')
-        apellido = input('Ingrese apellido del colaborador: ')
-        edad = int(input('Ingrese edad del colaborador: '))
-        salario = float(input('Ingrese salario del colaborador: '))
+        id_tarea = input('Ingrese ID de la tarea: ')
+        descripcion = input('Ingrese descripción de la tarea: ')
+        fecha_vencimiento = input('Ingrese fecha de vencimiento (YYYY-MM-DD): ')
+        estado = input('Ingrese estado de la tarea (pendiente, en progreso, completada): ')
 
-        if tipo_colaborador == '1':
-            departamento = input('Ingrese departamento del colaborador: ')
-            colaborador = ColaboradorTiempoCompleto(dni, nombre, apellido, edad, salario, departamento)
-        elif tipo_colaborador == '2':
-            horas_semanales = int(input('Ingrese hora semanales del colaborador: '))
-            colaborador = ColaboradorTiempoParcial(dni, nombre, apellido, edad, salario, horas_semanales)
+        if tipo_tarea == '1':
+            tarea = TareaSimple(id_tarea, descripcion, fecha_vencimiento, estado)
+        elif tipo_tarea == '2':
+            frecuencia = input('Ingrese frecuencia de la tarea (diaria, semanal, mensual): ')
+            tarea = TareaRecurrente(id_tarea, descripcion, fecha_vencimiento, estado, frecuencia)
         else:
             print('Opción inválida')
             return
 
-        gestion.crear_colaborador(colaborador)
+        gestion.crear_tarea(tarea)
         input('Presione enter para continuar...')
 
     except ValueError as e:
@@ -51,35 +43,37 @@ def agregar_colaborador(gestion, tipo_colaborador):
     except Exception as e:
         print(f'Error inesperado: {e}')
 
-def buscar_colaborador_por_dni(gestion):
-    dni = input('Ingrese el DNI del colaborador a buscar: ')
-    gestion.leer_colaborador(dni)
+def buscar_tarea_por_id(gestion):
+    id_tarea = input('Ingrese el ID de la tarea a buscar: ')
+    gestion.leer_tarea(id_tarea)
     input('Presione enter para continuar...')
 
-def actualizar_salario_colaborador(gestion):
-    dni = input('Ingrese el DNI del colaborador para actualizar salario: ')
-    salario = float(input('Ingrese el salario del colaborador'))
-    gestion.actualizar_colaborador(dni, salario)
+def actualizar_tarea(gestion):
+    id_tarea = input('Ingrese el ID de la tarea para actualizar: ')
+    descripcion = input('Ingrese nueva descripción (dejar en blanco para no cambiar): ')
+    fecha_vencimiento = input('Ingrese nueva fecha de vencimiento (YYYY-MM-DD, dejar en blanco para no cambiar): ')
+    estado = input('Ingrese nuevo estado (pendiente, en progreso, completada, dejar en blanco para no cambiar): ')
+    gestion.actualizar_tarea(id_tarea, descripcion, fecha_vencimiento if fecha_vencimiento else None, estado if estado else None)
     input('Presione enter para continuar...')
 
-def eliminar_colaborador_por_dni(gestion):
-    dni = input('Ingrese el DNI del colaborador a eliminar: ')
-    gestion.eliminar_colaborador(dni)
+def eliminar_tarea_por_id(gestion):
+    id_tarea = input('Ingrese el ID de la tarea a eliminar: ')
+    gestion.eliminar_tarea(id_tarea)
     input('Presione enter para continuar...')
 
-def mostrar_todos_los_colaboradores(gestion):
-    print('=============== Listado completo de los  Colaboradores ==============')
-    for colaborador in gestion.leer_datos().values():
-        if 'departamento' in colaborador:
-            print(f"{colaborador['nombre']} - Departamento {colaborador['departamento']}")
+def mostrar_todas_las_tareas(gestion):
+    print('=============== Listado completo de las Tareas ===============')
+    for tarea in gestion.leer_datos().values():
+        if 'frecuencia' in tarea:
+            print(f"{tarea['descripcion']} (Frecuencia: {tarea['frecuencia']})")
         else:
-            print(f"{colaborador['nombre']} - Horas Semanales {colaborador['horas_semanales']}")
-    print('=====================================================================')
+            print(f"{tarea['descripcion']}")
+    print('===========================================================')
     input('Presione enter para continuar...')
 
 if __name__ == "__main__":
-    archivo_colaboradores = 'colaboradores_db.json'
-    gestion = GestionColaboradores(archivo_colaboradores)
+    archivo_tareas = 'tareas_db.json'
+    gestion = GestionTareas(archivo_tareas)
 
     while True:
         limpiar_pantalla()
@@ -87,24 +81,23 @@ if __name__ == "__main__":
         opcion = input('Seleccione una opción: ')
 
         if opcion == '1' or opcion == '2':
-            agregar_colaborador(gestion, opcion)
+            agregar_tarea(gestion, opcion)
         
         elif opcion == '3':
-            buscar_colaborador_por_dni(gestion)
+            buscar_tarea_por_id(gestion)
 
         elif opcion == '4':
-            actualizar_salario_colaborador(gestion)
+            actualizar_tarea(gestion)
 
         elif opcion == '5':
-            eliminar_colaborador_por_dni(gestion)
+            eliminar_tarea_por_id(gestion)
 
         elif opcion == '6':
-            mostrar_todos_los_colaboradores(gestion)
+            mostrar_todas_las_tareas(gestion)
 
         elif opcion == '7':
-            print('Saliendo del programa...')
+            print('Saliendo...')
             break
-        else:
-            print('Opción no válida. Por favor, seleccione una opción válida (1-7)')
-        
 
+        else:
+            print('Opción no válida. Inténtelo de nuevo.')

@@ -1,116 +1,68 @@
 '''
-Desafío 1: Sistema de Gestión de Colaborador
-
-Objetivo: Desarrollar un sistema para gestionar colaboradores de una empresa.
+Desafío 3: Sistema de Gestión de Tareas
+Objetivo: Desarrollar un sistema para organizar y administrar tareas personales o de equipo.
 
 Requisitos:
-    • Crear una clase base Colaborador con atributos como nombre, apellido, edad, salario, etc.
-    • Definir clases derivadas para diferentes tipos de empleados (por ejemplo, ColaboradorTiempoCompleto, ColaboradorTiempoParcial) con atributos y métodos específicos.
-    • Implementar operaciones CRUD para gestionar los empleados.
-    • Manejar errores con bloques try-except para validar entradas y gestionar excepciones (por ejemplo, salario negativo, longitud dni, etc).
-    • Persistir los datos en archivo JSON.
+
+Crear una clase base Tarea con atributos como descripción, fecha de vencimiento, estado (pendiente, en progreso, completada), etc.
+Definir al menos 2 clases derivadas para diferentes tipos de tareas (por ejemplo, TareaSimple, TareaRecurrente) con atributos y métodos específicos.
+Implementar operaciones CRUD para gestionar las tareas.
+Manejar errores con bloques try-except para validar entradas y gestionar excepciones.
+Persistir los datos en archivo JSON.
+
 '''
 import json
+from datetime import datetime
 
-class Colaborador:
-    def __init__(self, dni, nombre, apellido, edad, salario):
-        self.__dni = self.validar_dni(dni)
-        self.__nombre = nombre
-        self.__apellido = apellido
-        self.__edad = edad
-        self.__salario = self.validar_salario(salario)
+class Tarea:
+    ESTADOS = ['pendiente', 'en progreso', 'completada']
 
-    @property
-    def dni(self):
-        return self.__dni
-    
-    @property
-    def nombre(self):
-        return self.__nombre.capitalize()
-    
-    @property
-    def apellido(self):
-        return self.__apellido.capitalize()
-    
-    @property
-    def edad(self):
-        return self.__edad
-    
-    @property
-    def salario(self):
-        return self.__salario
-    
-    @salario.setter
-    def salario(self, nuevo_salario):
-        self.__salario = self.validar_salario(nuevo_salario)
+    def __init__(self, id_tarea, descripcion, fecha_vencimiento, estado='pendiente'):
+        self.id_tarea = id_tarea
+        self.descripcion = descripcion
+        self.fecha_vencimiento = self.validar_fecha(fecha_vencimiento)
+        self.estado = self.validar_estado(estado)
 
-    def validar_dni(self, dni):
+    def validar_fecha(self, fecha):
         try:
-            dni_num = int(dni)
-            if len(str(dni)) not in [7, 8]:
-                raise ValueError("El DNI debe tener 7 u 8 dígitos.")
-            if dni_num <= 0:
-                raise ValueError("El DNI debe ser numérico positivo.")
-            return dni_num
+            return datetime.strptime(fecha, '%Y-%m-%d').date()
         except ValueError:
-            raise ValueError("El DNI debe ser numérico y estar compuesto por 7 u 8 dígitos.")
+            raise ValueError("La fecha debe estar en formato YYYY-MM-DD.")
 
-    def validar_salario(self, salario):
-        try:
-            salario_num = float(salario)
-            if salario_num <= 0:
-                raise ValueError("El salario debe ser numérico positivo.")
-            return salario_num
-        except ValueError:
-            raise ValueError("El salario debe ser un número válido.")
+    def validar_estado(self, estado):
+        if estado not in self.ESTADOS:
+            raise ValueError(f"Estado inválido. Debe ser uno de {self.ESTADOS}.")
+        return estado
 
     def to_dict(self):
         return {
-            "dni": self.dni,
-            "nombre": self.nombre,
-            "apellido": self.apellido,
-            "edad": self.edad,
-            "salario": self.salario
+            "id_tarea": self.id_tarea,
+            "descripcion": self.descripcion,
+            "fecha_vencimiento": str(self.fecha_vencimiento),
+            "estado": self.estado
         }
 
     def __str__(self):
-        return f"{self.nombre} {self.apellido}"
+        return f"{self.descripcion} (Estado: {self.estado})"
 
-class ColaboradorTiempoCompleto(Colaborador):
-    def __init__(self, dni, nombre, apellido, edad, salario, departamento):
-        super().__init__(dni, nombre, apellido, edad, salario)
-        self.__departamento = departamento
+class TareaSimple(Tarea):
+    def __init__(self, id_tarea, descripcion, fecha_vencimiento, estado='pendiente'):
+        super().__init__(id_tarea, descripcion, fecha_vencimiento, estado)
 
-    @property
-    def departamento(self):
-        return self.__departamento
-
-    def to_dict(self):
-        data = super().to_dict()
-        data["departamento"] = self.departamento
-        return data
-
-    def __str__(self):
-        return f"{super().__str__()} - Departamento: {self.departamento}"
-
-class ColaboradorTiempoParcial(Colaborador):
-    def __init__(self, dni, nombre, apellido, edad, salario, horas_semanales):
-        super().__init__(dni, nombre, apellido, edad, salario)
-        self.__horas_semanales = horas_semanales
-
-    @property
-    def horas_semanales(self):
-        return self.__horas_semanales
+class TareaRecurrente(Tarea):
+    def __init__(self, id_tarea, descripcion, fecha_vencimiento, estado='pendiente', frecuencia='semanal'):
+        super().__init__(id_tarea, descripcion, fecha_vencimiento, estado)
+        self.frecuencia = frecuencia
 
     def to_dict(self):
         data = super().to_dict()
-        data["horas_semanales"] = self.horas_semanales
+        data["frecuencia"] = self.frecuencia
         return data
 
     def __str__(self):
-        return f"{super().__str__()} - Horas Semanales: {self.horas_semanales}"
+        return f"{super().__str__()} (Frecuencia: {self.frecuencia})"
 
-class GestionColaboradores:
+class GestionTareas:
     def __init__(self, archivo):
         self.archivo = archivo
 
@@ -134,55 +86,59 @@ class GestionColaboradores:
         except Exception as error:
             print(f'Error inesperado: {error}')
 
-    def crear_colaborador(self, colaborador):
+    def crear_tarea(self, tarea):
         try:
             datos = self.leer_datos()
-            dni = colaborador.dni
-            if not str(dni) in datos.keys():
-                datos[dni] = colaborador.to_dict()
+            id_tarea = tarea.id_tarea
+            if id_tarea not in datos:
+                datos[id_tarea] = tarea.to_dict()
                 self.guardar_datos(datos)
-                print(f"Colaborador {colaborador.nombre} {colaborador.apellido} creado correctamente.")
+                print(f"Tarea '{tarea.descripcion}' creada correctamente.")
             else:
-                print(f"Ya existe colaborador con DNI '{dni}'.")
+                print(f"Ya existe tarea con ID '{id_tarea}'.")
         except Exception as error:
-            print(f'Error inesperado al crear colaborador: {error}')
+            print(f'Error inesperado al crear tarea: {error}')
 
-    def leer_colaborador(self, dni):
+    def leer_tarea(self, id_tarea):
         try:
             datos = self.leer_datos()
-            if dni in datos:
-                colaborador_data = datos[dni]
-                if 'departamento' in colaborador_data:
-                    colaborador = ColaboradorTiempoCompleto(**colaborador_data)
+            if id_tarea in datos:
+                tarea_data = datos[id_tarea]
+                if 'frecuencia' in tarea_data:
+                    tarea = TareaRecurrente(**tarea_data)
                 else:
-                    colaborador = ColaboradorTiempoParcial(**colaborador_data)
-                print(f'Colaborador encontrado con DNI {dni}')
+                    tarea = TareaSimple(**tarea_data)
+                print(f'Tarea encontrada con ID {id_tarea}: {tarea}')
             else:
-                print(f'No se encontró encontrado con DNI {dni}')
-
+                print(f'No se encontró tarea con ID {id_tarea}')
         except Exception as e:
-            print('Error al leer colaborador: {e}')
+            print(f'Error al leer tarea: {e}')
 
-    def actualizar_colaborador(self, dni, nuevo_salario):
+    def actualizar_tarea(self, id_tarea, descripcion=None, fecha_vencimiento=None, estado=None):
         try:
             datos = self.leer_datos()
-            if str(dni) in datos.keys():
-                 datos[dni]['salario'] = nuevo_salario
-                 self.guardar_datos(datos)
-                 print(f'Salario actualizado para el colalborador DNI:{dni}')
+            if id_tarea in datos:
+                if descripcion:
+                    datos[id_tarea]['descripcion'] = descripcion
+                if fecha_vencimiento:
+                    datos[id_tarea]['fecha_vencimiento'] = str(self.validar_fecha(fecha_vencimiento))
+                if estado:
+                    datos[id_tarea]['estado'] = self.validar_estado(estado)
+                self.guardar_datos(datos)
+                print(f'Tarea con ID {id_tarea} actualizada correctamente.')
             else:
-                print(f'No se encontró colaborador con DNI:{dni}')
+                print(f'No se encontró tarea con ID {id_tarea}')
         except Exception as e:
-            print(f'Error al actualizar el colaborador: {e}')
+            print(f'Error al actualizar la tarea: {e}')
 
-    def eliminar_colaborador(self, dni):
+    def eliminar_tarea(self, id_tarea):
         try:
             datos = self.leer_datos()
-            if str(dni) in datos.keys():
-                 del datos[dni]
-                 self.guardar_datos(datos)
-                 print(f'colalborador DNI:{dni} eliminado correctamente')
+            if id_tarea in datos:
+                del datos[id_tarea]
+                self.guardar_datos(datos)
+                print(f'Tarea con ID {id_tarea} eliminada correctamente.')
             else:
-                print(f'No se encontró colaborador con DNI:{dni}')
+                print(f'No se encontró tarea con ID {id_tarea}')
         except Exception as e:
-            print(f'Error al eliminar el colaborador: {e}')
+            print(f'Error al eliminar la tarea: {e}')
